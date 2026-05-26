@@ -1,0 +1,49 @@
+{
+  "records": [
+    {
+      "publicationNumber": "US20260123456A1",
+      "applicationNumberText": "18900123",
+      "publicationDate": "2026-05-22",
+      "filingDate": "2024-11-20",
+      "inventionTitle": "Adaptive Thermal Management For Battery Packs",
+      "abstractText": "A control system dynamically allocates coolant flow across battery modules using predictive cell temperature models and charge-state forecasts.",
+      "claimsText": "1. A battery thermal management system comprising a manifold, controllable valves, and a model-predictive controller configured to estimate future module temperature. 2. The system of claim 1 wherein flow is adjusted based on charging profile and estimated degradation rate.",
+      "summaryText": "The disclosure describes balancing cooling efficiency and battery lifetime by actively routing coolant to modules with projected thermal stress.",
+      "descriptionText": "Sensor arrays capture module temperature, current draw, and ambient conditions. A predictive model computes module heat rise over a forecast horizon and a valve optimization routine minimizes peak module temperature.",
+      "backgroundText": "Conventional battery cooling routes uniform coolant flow and cannot respond to localized thermal spikes.",
+      "assigneeName": "Volt Horizon Energy LLC",
+      "inventorNameArrayText": ["A. Patel", "M. Hernandez"],
+      "cpcCodes": ["H01M10/613", "B60L58/24"]
+    },
+    {
+      "publicationNumber": "US20260119876A1",
+      "applicationNumberText": "18877220",
+      "publicationDate": "2026-05-15",
+      "filingDate": "2024-10-30",
+      "inventionTitle": "Sparse Attention Accelerator For Transformer Inference",
+      "abstractText": "Hardware and compiler techniques for skipping low-impact attention blocks during autoregressive token generation.",
+      "claimsText": "1. A method for transformer inference comprising ranking attention heads by contribution score and executing only a selected subset per token. 2. A scheduler that promotes or demotes heads based on observed perplexity drift.",
+      "summaryText": "The approach improves inference throughput while maintaining quality by adaptive sparse head execution.",
+      "descriptionText": "The accelerator includes a contribution estimator, head-selection unit, and mixed-precision matrix engine. A runtime controller applies quality thresholds and fallback full-head execution when drift exceeds guardrails.",
+      "backgroundText": "Large language model inference cost grows with sequence length and dense attention execution.",
+      "assigneeName": "Northbridge Compute Systems Inc.",
+      "inventorNameArrayText": ["J. Kim", "S. Alvarez", "R. Nwosu"],
+      "cpcCodes": ["G06N3/08", "G06F9/30"]
+    },
+    {
+      "publicationNumber": "US20260114567A1",
+      "applicationNumberText": "18854991",
+      "publicationDate": "2026-05-08",
+      "filingDate": "2024-10-05",
+      "inventionTitle": "Computer Vision Guided Robotic Orchard Harvesting",
+      "abstractText": "An orchard robot identifies fruit ripeness and manipulates a compliant end effector to reduce bruising during harvest.",
+      "claimsText": "1. A harvesting robot comprising a ripeness classifier and a deformable gripper controlled by force feedback. 2. A picking trajectory planner that adapts to occlusions and branch motion.",
+      "summaryText": "Vision, force sensing, and adaptive path planning improve harvest precision and fruit quality.",
+      "descriptionText": "Stereo cameras detect fruit candidates and estimate ripeness scores. A planner computes grasp approach vectors and updates trajectories using real-time branch movement estimation.",
+      "backgroundText": "Manual orchard harvesting is labor intensive and existing rigid grippers often damage produce.",
+      "assigneeName": "AgriMotion Robotics Corp.",
+      "inventorNameArrayText": ["L. Singh", "P. Romero"],
+      "cpcCodes": ["A01D46/30", "G06V20/56"]
+    }
+  ]
+}

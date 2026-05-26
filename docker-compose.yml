@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: sh /app/scripts/start-web.sh
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: development
+      APP_DEBUG: "false"
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/patents
+      REDIS_URL: redis://redis:6379/0
+      RQ_ASYNC: "true"
+      USPTO_API_BASE: https://api.uspto.gov/api/v1
+      USPTO_API_KEY: ${USPTO_API_KEY:-}
+      USE_SAMPLE_DATA_ON_FAILURE: ${USE_SAMPLE_DATA_ON_FAILURE:-true}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ADMIN_API_TOKEN: ${ADMIN_API_TOKEN:-change-me}
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: sh /app/scripts/start-worker.sh
+    environment:
+      APP_ENV: development
+      APP_DEBUG: "false"
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/patents
+      REDIS_URL: redis://redis:6379/0
+      RQ_ASYNC: "true"
+      USPTO_API_BASE: https://api.uspto.gov/api/v1
+      USPTO_API_KEY: ${USPTO_API_KEY:-}
+      USE_SAMPLE_DATA_ON_FAILURE: ${USE_SAMPLE_DATA_ON_FAILURE:-true}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ADMIN_API_TOKEN: ${ADMIN_API_TOKEN:-change-me}
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: patents
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:

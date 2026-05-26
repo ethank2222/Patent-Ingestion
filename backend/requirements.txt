@@ -1,0 +1,12 @@
+Flask==3.0.3
+Flask-Cors==5.0.0
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.36
+redis==5.2.1
+rq==1.16.2
+python-dotenv==1.0.1
+httpx==0.28.1
+openai==1.97.0
+gunicorn==22.0.0
+psycopg[binary]==3.2.9
+tenacity==9.0.0

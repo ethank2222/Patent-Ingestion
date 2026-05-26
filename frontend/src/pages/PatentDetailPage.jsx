@@ -1,0 +1,196 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { getPatent, getSummaryJob, requestSummary } from "../api";
+import SummaryPanel from "../components/SummaryPanel";
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export default function PatentDetailPage() {
+  const { publicationNumber } = useParams();
+  const [patent, setPatent] = useState(null);
+  const [loadingPatent, setLoadingPatent] = useState(true);
+  const [error, setError] = useState("");
+
+  const [summaryMode, setSummaryMode] = useState("deep");
+  const [summary, setSummary] = useState(null);
+  const [summaryStatus, setSummaryStatus] = useState("idle");
+  const [jobMeta, setJobMeta] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadPatent() {
+      setLoadingPatent(true);
+      setError("");
+      try {
+        const response = await getPatent(publicationNumber);
+        if (active) {
+          setPatent(response);
+        }
+      } catch (err) {
+        if (active) {
+          setError(err.message || "Failed to load patent details");
+        }
+      } finally {
+        if (active) {
+          setLoadingPatent(false);
+        }
+      }
+    }
+
+    loadPatent();
+    return () => {
+      active = false;
+    };
+  }, [publicationNumber]);
+
+  async function pollJob(jobId) {
+    for (let attempt = 0; attempt < 120; attempt += 1) {
+      const statusPayload = await getSummaryJob(jobId);
+      setJobMeta(statusPayload.job || null);
+
+      const jobStatus = statusPayload.job?.status;
+      if (statusPayload.summary && jobStatus === "completed") {
+        setSummary(statusPayload.summary);
+        setSummaryStatus("completed");
+        return;
+      }
+
+      if (jobStatus === "failed") {
+        setSummaryStatus("failed");
+        setError(statusPayload.job?.error_message || "Summary generation failed");
+        return;
+      }
+
+      setSummaryStatus(jobStatus || "running");
+      await sleep(2000);
+    }
+
+    setSummaryStatus("failed");
+    setError("Summary timed out. Please retry.");
+  }
+
+  async function handleGenerateSummary() {
+    setError("");
+    setSummaryStatus("queued");
+    setSummary(null);
+
+    try {
+      const response = await requestSummary(publicationNumber, summaryMode);
+      setJobMeta(response.job || null);
+
+      if (response.summary) {
+        setSummary(response.summary);
+        setSummaryStatus("completed");
+        return;
+      }
+
+      if (response.job?.job_id) {
+        await pollJob(response.job.job_id);
+      } else {
+        setSummaryStatus("failed");
+        setError("No job id returned by server.");
+      }
+    } catch (err) {
+      setSummaryStatus("failed");
+      setError(err.message || "Failed to generate summary");
+    }
+  }
+
+  const sections = useMemo(() => patent?.sections || {}, [patent]);
+
+  if (loadingPatent) {
+    return <div className="loading">Loading patent...</div>;
+  }
+
+  if (error && !patent) {
+    return (
+      <section className="panel">
+        <Link to="/" className="back-link">
+          Back to list
+        </Link>
+        <div className="error">{error}</div>
+      </section>
+    );
+  }
+
+  if (!patent) {
+    return null;
+  }
+
+  return (
+    <section className="panel">
+      <Link to="/" className="back-link">
+        Back to list
+      </Link>
+
+      <h1>{patent.title || patent.publication_number}</h1>
+      <div className="meta-grid">
+        <div>
+          <strong>Publication</strong>
+          <span>{patent.publication_number}</span>
+        </div>
+        <div>
+          <strong>Type</strong>
+          <span>{patent.doc_type}</span>
+        </div>
+        <div>
+          <strong>Publication Date</strong>
+          <span>{patent.publication_date || "-"}</span>
+        </div>
+        <div>
+          <strong>Filing Date</strong>
+          <span>{patent.filing_date || "-"}</span>
+        </div>
+        <div>
+          <strong>Assignee</strong>
+          <span>{patent.assignee || "-"}</span>
+        </div>
+        <div>
+          <strong>CPC Codes</strong>
+          <span>{(patent.cpc_codes || []).join(", ") || "-"}</span>
+        </div>
+      </div>
+
+      <div className="summary-actions">
+        <label>
+          Summary depth
+          <select value={summaryMode} onChange={(event) => setSummaryMode(event.target.value)}>
+            <option value="brief">Brief</option>
+            <option value="standard">Standard</option>
+            <option value="deep">Deep</option>
+          </select>
+        </label>
+        <button onClick={handleGenerateSummary} disabled={summaryStatus === "running" || summaryStatus === "queued"}>
+          {summaryStatus === "running" || summaryStatus === "queued" ? "Generating..." : "Generate AI Summary"}
+        </button>
+      </div>
+
+      {jobMeta && (
+        <p className="hint">
+          Job: {jobMeta.job_id} | Status: {jobMeta.status}
+        </p>
+      )}
+
+      {error && <div className="error">{error}</div>}
+
+      <SummaryPanel summary={summary} status={summaryStatus} />
+
+      <h2>Source Sections</h2>
+      <div className="section-block">
+        <h3>Abstract</h3>
+        <p>{sections.abstract || patent.abstract || "No abstract available"}</p>
+      </div>
+      <div className="section-block">
+        <h3>Claims</h3>
+        <pre>{sections.claims || "No claims text available"}</pre>
+      </div>
+      <div className="section-block">
+        <h3>Description</h3>
+        <pre>{sections.description || "No description text available"}</pre>
+      </div>
+    </section>
+  );
+}
