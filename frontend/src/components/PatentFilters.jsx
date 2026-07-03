@@ -56,9 +56,9 @@ export default function PatentFilters({ filters, onChange, onSubmit, onReset, lo
         </select>
       </label>
 
-      <div className="filter-actions">
+      <div className="filter-actions" aria-label="Filter actions">
         <button type="submit" disabled={loading}>
-          {loading ? "Loading..." : "Apply Filters"}
+          {loading ? "Applying" : "Apply"}
         </button>
         <button
           type="button"

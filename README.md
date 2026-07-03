@@ -31,10 +31,10 @@ Copy `.env.example` and configure these at minimum:
 - `DATABASE_URL`
 - `REDIS_URL`
 - `OPENAI_API_KEY`
+- `USPTO_API_KEY`
 - `ADMIN_API_TOKEN`
 
 Optional but useful:
-- `USPTO_API_KEY` (only if your USPTO access requires one)
 - `USE_SAMPLE_DATA_ON_FAILURE=true` (dev fallback)
 - `OPENAI_SUMMARY_MODEL=gpt-4.1-mini`
 - `SUMMARY_MAX_OUTPUT_TOKENS=500`
@@ -53,7 +53,7 @@ This is the only external key required for AI summaries.
 OpenAI's quickstart shows `OPENAI_API_KEY` as the environment variable read by the SDK: `https://developers.openai.com/api/docs/quickstart`.
 
 ### USPTO
-The app reads public patent metadata from the USPTO Open Data APIs. Leave `USPTO_API_KEY` blank unless the USPTO portal or your deployment requires a key for the endpoint or rate limit you use.
+The app reads patent metadata from the USPTO Open Data APIs. The production ingestion endpoint used by this app returns `401 Unauthorized` without `USPTO_API_KEY`, so configure a key before running ingestion.
 
 1. Open the USPTO API catalog: `https://data.uspto.gov/apis`.
 2. Sign in or create a USPTO account if the API listing asks for authentication.
@@ -132,12 +132,12 @@ Create these Railway resources:
 - `DATABASE_URL` (Railway Postgres URL)
 - `REDIS_URL` (Railway Redis URL)
 - `USPTO_API_BASE=https://api.uspto.gov/api/v1`
+- `USPTO_API_KEY=<your_uspto_key>`
 - `OPENAI_API_KEY=<your_openai_key>`
 - `ADMIN_API_TOKEN=<strong_secret>`
 - `RQ_ASYNC=true`
 - `APP_DEBUG=false`
 - `USE_SAMPLE_DATA_ON_FAILURE=false` (recommended for production)
-- `USPTO_API_KEY=<your_uspto_key>` (optional unless required for your USPTO access)
 
 ### 5. Initialize Data
 After first deploy, call admin endpoint once:

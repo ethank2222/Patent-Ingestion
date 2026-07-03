@@ -21,6 +21,9 @@ class IngestionService:
         )
 
     def ingest_recent(self, days: int | None = None, limit: int | None = None) -> dict[str, Any]:
+        if not self.settings.uspto_api_key and not self.settings.use_sample_data_on_failure:
+            raise RuntimeError("USPTO_API_KEY is required for production ingestion.")
+
         days = days or self.settings.default_ingest_days
         limit = limit or self.settings.default_ingest_limit
         end_date = datetime.now(timezone.utc).date()

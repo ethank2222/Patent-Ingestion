@@ -10,7 +10,7 @@ export default function PatentTable({ items, loading }) {
     return (
       <div className="empty">
         <strong>No patent records available.</strong>
-        <span>Run ingestion from the admin endpoint, then refresh this page.</span>
+        <span>The production database is ready, but no USPTO records have been ingested yet.</span>
       </div>
     );
   }

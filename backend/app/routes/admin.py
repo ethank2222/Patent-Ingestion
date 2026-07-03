@@ -27,7 +27,10 @@ def ingest_incremental() -> tuple:
     limit = payload.get("limit")
 
     service = IngestionService(current_app.settings)
-    result = service.ingest_recent(days=days, limit=limit)
+    try:
+        result = service.ingest_recent(days=days, limit=limit)
+    except Exception as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 502
 
     return jsonify({"status": "ok", "result": result}), 200
 
@@ -42,7 +45,10 @@ def ingest_backfill() -> tuple:
     limit = payload.get("limit", 2500)
 
     service = IngestionService(current_app.settings)
-    result = service.ingest_recent(days=days, limit=limit)
+    try:
+        result = service.ingest_recent(days=days, limit=limit)
+    except Exception as exc:
+        return jsonify({"status": "error", "error": str(exc), "mode": "backfill"}), 502
 
     return jsonify({"status": "ok", "result": result, "mode": "backfill"}), 200
 
