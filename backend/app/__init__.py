@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from flask import Flask, abort, send_from_directory
+from flask import Flask, abort, request, send_from_directory
 
 from .config import Config
 from .extensions import cors, db
@@ -30,6 +30,16 @@ def create_app() -> Flask:
     app.register_blueprint(summaries_bp, url_prefix="/api")
     app.register_blueprint(admin_bp, url_prefix="/api")
 
+    @app.after_request
+    def set_cache_headers(response):
+        if request.path == "/" or response.content_type.startswith("text/html"):
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+        return response
+
+    @app.get("/favicon.ico")
+    def favicon():
+        return "", 204
+
     @app.get("/")
     def serve_root():
         index_file = Path(app.static_folder or "").joinpath("index.html")
@@ -39,6 +49,8 @@ def create_app() -> Flask:
 
     @app.get("/<path:path>")
     def serve_spa(path: str):
+        if path == "favicon.ico":
+            return "", 204
         if path == "api" or path.startswith("api/"):
             abort(404)
         static_path = Path(app.static_folder or "").joinpath(path)
