@@ -24,6 +24,8 @@ React + Flask app for browsing recent U.S. patent records and generating compact
 - `POST /api/admin/ingest/incremental` (admin token required)
 - `POST /api/admin/ingest/backfill` (admin token required)
 
+Compatibility aliases are also available under `/api/v1/*`. `/api/v1/courses` is intentionally mapped to patent records so stale clients from an older deployment do not hard-fail with a blank page.
+
 ## Environment Variables
 Copy `.env.example` and configure these at minimum:
 - `DATABASE_URL`
@@ -145,6 +147,16 @@ curl -X POST https://<your-railway-domain>/api/admin/ingest/incremental \
   -H "X-Admin-Token: <ADMIN_API_TOKEN>" \
   -d '{"days": 30, "limit": 1000}'
 ```
+
+### 6. Smoke Test Production
+After each deploy, verify:
+```bash
+curl https://<your-railway-domain>/api/health
+curl https://<your-railway-domain>/api/patents
+curl https://<your-railway-domain>/api/v1/courses
+```
+
+All three should return HTTP 200. The `/api/patents` response may be empty until ingestion has run.
 
 ## Operational Notes
 - Summary jobs are queued in Redis (`rq` queue name: `summaries`).

@@ -1,8 +1,18 @@
+import React from "react";
 import { Link } from "react-router-dom";
 
-export default function PatentTable({ items }) {
+export default function PatentTable({ items, loading }) {
+  if (loading && !items.length) {
+    return <div className="loading">Loading patent records...</div>;
+  }
+
   if (!items.length) {
-    return <div className="empty">No patents match your filters.</div>;
+    return (
+      <div className="empty">
+        <strong>No patent records available.</strong>
+        <span>Run ingestion from the admin endpoint, then refresh this page.</span>
+      </div>
+    );
   }
 
   return (

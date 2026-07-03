@@ -1,3 +1,4 @@
+import React from "react";
 import { Link, Route, Routes } from "react-router-dom";
 import PatentDetailPage from "./pages/PatentDetailPage";
 import PatentListPage from "./pages/PatentListPage";

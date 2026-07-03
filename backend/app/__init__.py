@@ -7,6 +7,7 @@ from flask import Flask, abort, request, send_from_directory
 from .config import Config
 from .extensions import cors, db
 from .routes.admin import admin_bp
+from .routes.compat import compat_bp
 from .routes.health import health_bp
 from .routes.patents import patents_bp
 from .routes.summaries import summaries_bp
@@ -29,6 +30,7 @@ def create_app() -> Flask:
     app.register_blueprint(patents_bp, url_prefix="/api")
     app.register_blueprint(summaries_bp, url_prefix="/api")
     app.register_blueprint(admin_bp, url_prefix="/api")
+    app.register_blueprint(compat_bp, url_prefix="/api")
 
     @app.after_request
     def set_cache_headers(response):

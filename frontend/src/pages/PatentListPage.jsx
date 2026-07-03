@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import PatentFilters from "../components/PatentFilters";
 import PatentTable from "../components/PatentTable";
 import { listPatents } from "../api";
@@ -15,7 +15,7 @@ export default function PatentListPage() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0, page_size: 20 });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const fetchPatents = useCallback(
@@ -24,10 +24,11 @@ export default function PatentListPage() {
       setError("");
       try {
         const response = await listPatents({ ...currentFilters, page, page_size: pagination.page_size });
-        setItems(response.items || []);
+        setItems(Array.isArray(response.items) ? response.items : []);
         setPagination(response.pagination || { page: 1, pages: 1, total: 0, page_size: 20 });
       } catch (err) {
         setError(err.message || "Failed to load patents");
+        setItems([]);
       } finally {
         setLoading(false);
       }
@@ -61,8 +62,12 @@ export default function PatentListPage() {
         loading={loading}
       />
 
-      {error && <div className="error">{error}</div>}
-      <PatentTable items={items} />
+      {error && (
+        <div className="error" role="alert">
+          {error}
+        </div>
+      )}
+      <PatentTable items={items} loading={loading} />
 
       <div className="pagination">
         <button

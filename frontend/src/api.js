@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -33,7 +33,11 @@ export async function listPatents(params) {
     }
   });
   const suffix = query.toString() ? `?${query.toString()}` : "";
-  return request(`/patents${suffix}`);
+  const payload = await request(`/patents${suffix}`);
+  if (!payload.items && Array.isArray(payload.courses)) {
+    return { ...payload, items: payload.courses };
+  }
+  return payload;
 }
 
 export async function getPatent(publicationNumber) {

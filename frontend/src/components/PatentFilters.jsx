@@ -1,3 +1,5 @@
+import React from "react";
+
 export default function PatentFilters({ filters, onChange, onSubmit, onReset, loading }) {
   return (
     <form

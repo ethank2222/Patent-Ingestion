@@ -1,3 +1,5 @@
+import React from "react";
+
 export default function SummaryPanel({ summary, status }) {
   if (!summary && status === "idle") {
     return <div className="empty">No summary generated yet.</div>;
