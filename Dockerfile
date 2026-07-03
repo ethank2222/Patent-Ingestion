@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:20-alpine AS frontend-build
+FROM node:20-slim AS frontend-build
 WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm ci
+COPY frontend/package.json ./
+RUN npm install --include=optional --package-lock=false --no-audit --no-fund
 COPY frontend/ ./
 RUN npm run build
 
