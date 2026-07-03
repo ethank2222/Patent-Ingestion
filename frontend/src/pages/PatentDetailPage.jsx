@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getPatent, getSummaryJob, requestSummary } from "../api";
 import SummaryPanel from "../components/SummaryPanel";
@@ -13,7 +13,6 @@ export default function PatentDetailPage() {
   const [loadingPatent, setLoadingPatent] = useState(true);
   const [error, setError] = useState("");
 
-  const [summaryMode, setSummaryMode] = useState("deep");
   const [summary, setSummary] = useState(null);
   const [summaryStatus, setSummaryStatus] = useState("idle");
   const [jobMeta, setJobMeta] = useState(null);
@@ -78,7 +77,7 @@ export default function PatentDetailPage() {
     setSummary(null);
 
     try {
-      const response = await requestSummary(publicationNumber, summaryMode);
+      const response = await requestSummary(publicationNumber);
       setJobMeta(response.job || null);
 
       if (response.summary) {
@@ -98,8 +97,6 @@ export default function PatentDetailPage() {
       setError(err.message || "Failed to generate summary");
     }
   }
-
-  const sections = useMemo(() => patent?.sections || {}, [patent]);
 
   if (loadingPatent) {
     return <div className="loading">Loading patent...</div>;
@@ -133,38 +130,18 @@ export default function PatentDetailPage() {
           <span>{patent.publication_number}</span>
         </div>
         <div>
-          <strong>Type</strong>
-          <span>{patent.doc_type}</span>
-        </div>
-        <div>
           <strong>Publication Date</strong>
           <span>{patent.publication_date || "-"}</span>
-        </div>
-        <div>
-          <strong>Filing Date</strong>
-          <span>{patent.filing_date || "-"}</span>
         </div>
         <div>
           <strong>Assignee</strong>
           <span>{patent.assignee || "-"}</span>
         </div>
-        <div>
-          <strong>CPC Codes</strong>
-          <span>{(patent.cpc_codes || []).join(", ") || "-"}</span>
-        </div>
       </div>
 
       <div className="summary-actions">
-        <label>
-          Summary depth
-          <select value={summaryMode} onChange={(event) => setSummaryMode(event.target.value)}>
-            <option value="brief">Brief</option>
-            <option value="standard">Standard</option>
-            <option value="deep">Deep</option>
-          </select>
-        </label>
         <button onClick={handleGenerateSummary} disabled={summaryStatus === "running" || summaryStatus === "queued"}>
-          {summaryStatus === "running" || summaryStatus === "queued" ? "Generating..." : "Generate AI Summary"}
+          {summaryStatus === "running" || summaryStatus === "queued" ? "Generating..." : "Generate Summary"}
         </button>
       </div>
 
@@ -178,19 +155,12 @@ export default function PatentDetailPage() {
 
       <SummaryPanel summary={summary} status={summaryStatus} />
 
-      <h2>Source Sections</h2>
-      <div className="section-block">
-        <h3>Abstract</h3>
-        <p>{sections.abstract || patent.abstract || "No abstract available"}</p>
-      </div>
-      <div className="section-block">
-        <h3>Claims</h3>
-        <pre>{sections.claims || "No claims text available"}</pre>
-      </div>
-      <div className="section-block">
-        <h3>Description</h3>
-        <pre>{sections.description || "No description text available"}</pre>
-      </div>
+      {patent.abstract && (
+        <section className="abstract-block">
+          <h2>Patent Abstract</h2>
+          <p>{patent.abstract}</p>
+        </section>
+      )}
     </section>
   );
 }

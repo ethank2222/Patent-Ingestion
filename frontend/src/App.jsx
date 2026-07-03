@@ -7,9 +7,9 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <Link className="logo-link" to="/">
-          US Patent Intelligence
+          Patent Summaries
         </Link>
-        <p className="app-subtitle">Browse recent publications and generate summaries only when you request one.</p>
+        <p className="app-subtitle">Recent U.S. patents, summarized when you need them.</p>
       </header>
 
       <main className="app-main">

@@ -32,9 +32,9 @@ class Settings:
     default_ingest_limit: int
     openai_api_key: str
     openai_summary_model: str
-    openai_extract_model: str
     prompt_version: str
     summary_max_output_tokens: int
+    summary_source_char_limit: int
     admin_api_token: str
 
 
@@ -57,8 +57,8 @@ class Config:
             default_ingest_limit=int(os.getenv("DEFAULT_INGEST_LIMIT", "500")),
             openai_api_key=os.getenv("OPENAI_API_KEY", ""),
             openai_summary_model=os.getenv("OPENAI_SUMMARY_MODEL", "gpt-4.1-mini"),
-            openai_extract_model=os.getenv("OPENAI_EXTRACT_MODEL", "gpt-4.1-mini"),
-            prompt_version=os.getenv("PROMPT_VERSION", "v1"),
-            summary_max_output_tokens=int(os.getenv("SUMMARY_MAX_OUTPUT_TOKENS", "1400")),
+            prompt_version=os.getenv("PROMPT_VERSION", "summary-v2"),
+            summary_max_output_tokens=int(os.getenv("SUMMARY_MAX_OUTPUT_TOKENS", "500")),
+            summary_source_char_limit=int(os.getenv("SUMMARY_SOURCE_CHAR_LIMIT", "3500")),
             admin_api_token=os.getenv("ADMIN_API_TOKEN", "change-me"),
         )

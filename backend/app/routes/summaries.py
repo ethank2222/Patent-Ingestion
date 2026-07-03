@@ -17,11 +17,12 @@ def request_summary(publication_number: str) -> tuple:
         return jsonify({"error": "Patent not found"}), 404
 
     payload = request.get_json(silent=True) or {}
-    summary_mode = (payload.get("mode") or "deep").strip().lower()
+    requested_mode = (payload.get("mode") or "summary").strip().lower()
+    summary_mode = "summary"
     requested_by = (payload.get("requested_by") or "anonymous").strip()
 
-    if summary_mode not in {"brief", "standard", "deep"}:
-        return jsonify({"error": "Invalid mode. Use one of: brief, standard, deep."}), 400
+    if requested_mode != "summary":
+        return jsonify({"error": "Invalid mode. This app generates one compact summary mode."}), 400
 
     service = SummarizationService(current_app.settings)
     cached = service.get_cached_summary(patent=patent, summary_mode=summary_mode)

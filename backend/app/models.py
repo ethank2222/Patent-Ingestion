@@ -63,13 +63,10 @@ class Patent(db.Model):
         }
 
     def to_detail_dict(self) -> dict:
-        sections = {s.section_type: s.section_text for s in self.sections}
         payload = self.to_list_dict()
         payload.update(
             {
-                "sections": sections,
                 "source_url": self.source_url,
-                "source_hash": self.source_hash,
                 "ingested_at": self.ingested_at.isoformat() if self.ingested_at else None,
             }
         )
@@ -100,7 +97,7 @@ class Summary(db.Model):
 
     model_name = db.Column(db.String(128), nullable=False)
     prompt_version = db.Column(db.String(32), nullable=False)
-    summary_mode = db.Column(db.String(16), nullable=False, default="deep")
+    summary_mode = db.Column(db.String(16), nullable=False, default="summary")
     source_hash_at_generation = db.Column(db.String(128), nullable=False, index=True)
     cache_key = db.Column(db.String(256), nullable=False, unique=True, index=True)
 

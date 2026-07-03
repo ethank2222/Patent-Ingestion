@@ -1,9 +1,9 @@
 :root {
-  --bg: #f4f2ec;
-  --panel: #fffdf7;
+  --bg: #f6f7f8;
+  --panel: #ffffff;
   --ink: #1a1a1a;
-  --muted: #555;
-  --line: #d6d1c7;
+  --muted: #5a6270;
+  --line: #d9dee5;
   --accent: #0f5e45;
   --accent-soft: #e5f3ed;
   --danger: #8b1a1a;
@@ -16,7 +16,7 @@
 body {
   margin: 0;
   font-family: "Source Sans 3", "Segoe UI", sans-serif;
-  background: radial-gradient(circle at top right, #efe6d6, var(--bg) 42%);
+  background: var(--bg);
   color: var(--ink);
 }
 
@@ -27,7 +27,7 @@ body {
 .app-header {
   padding: 20px 28px;
   border-bottom: 1px solid var(--line);
-  background: #faf7ef;
+  background: #fff;
 }
 
 .logo-link {
@@ -51,7 +51,7 @@ body {
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 8px;
   padding: 20px;
 }
 
@@ -129,7 +129,7 @@ td {
 }
 
 th {
-  background: #f1eee6;
+  background: #eef2f5;
   font-weight: 700;
 }
 
@@ -175,10 +175,16 @@ a {
   padding-top: 14px;
 }
 
+.abstract-block {
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
 pre {
   white-space: pre-wrap;
   word-break: break-word;
-  background: #f7f6f2;
+  background: #f6f7f8;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px;
@@ -186,9 +192,30 @@ pre {
 
 .summary-content {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 14px;
-  background: #fbfaf6;
+  background: #fbfcfd;
+}
+
+.summary-content h2 {
+  margin: 16px 0 6px;
+  font-size: 1rem;
+}
+
+.summary-content ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.summary-lead {
+  font-size: 1.05rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.caveat {
+  color: var(--muted);
+  margin: 14px 0 0;
 }
 
 .summary-meta {

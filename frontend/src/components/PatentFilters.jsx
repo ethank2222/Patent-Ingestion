@@ -18,25 +18,6 @@ export default function PatentFilters({ filters, onChange, onSubmit, onReset, lo
       </label>
 
       <label>
-        Type
-        <select value={filters.doc_type} onChange={(event) => onChange({ ...filters, doc_type: event.target.value })}>
-          <option value="">All</option>
-          <option value="application_publication">Application Publication</option>
-          <option value="grant">Grant</option>
-        </select>
-      </label>
-
-      <label>
-        CPC Prefix
-        <input
-          type="text"
-          value={filters.cpc_prefix}
-          onChange={(event) => onChange({ ...filters, cpc_prefix: event.target.value.toUpperCase() })}
-          placeholder="e.g., G06N"
-        />
-      </label>
-
-      <label>
         Assignee
         <input
           type="text"

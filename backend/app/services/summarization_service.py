@@ -9,7 +9,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from ..extensions import db
 from ..models import Patent, Summary
-from .utils import make_summary_cache_key
+from .utils import make_source_hash, make_summary_cache_key
 
 
 class SummarizationService:
@@ -17,22 +17,24 @@ class SummarizationService:
         self.settings = settings
         self._client = OpenAI(api_key=settings.openai_api_key) if settings.openai_api_key else None
 
-    def get_cached_summary(self, patent: Patent, summary_mode: str = "deep") -> Summary | None:
+    def get_cached_summary(self, patent: Patent, summary_mode: str = "summary") -> Summary | None:
+        source_hash = self._summary_source_hash(patent)
         cache_key = make_summary_cache_key(
             publication_number=patent.publication_number,
             model_name=self.settings.openai_summary_model,
             prompt_version=self.settings.prompt_version,
-            source_hash=patent.source_hash,
+            source_hash=source_hash,
             summary_mode=summary_mode,
         )
         return Summary.query.filter_by(cache_key=cache_key, status="completed").order_by(Summary.generated_at.desc()).first()
 
-    def create_summary_record(self, patent: Patent, summary_mode: str = "deep") -> Summary:
+    def create_summary_record(self, patent: Patent, summary_mode: str = "summary") -> Summary:
+        source_hash = self._summary_source_hash(patent)
         cache_key = make_summary_cache_key(
             publication_number=patent.publication_number,
             model_name=self.settings.openai_summary_model,
             prompt_version=self.settings.prompt_version,
-            source_hash=patent.source_hash,
+            source_hash=source_hash,
             summary_mode=summary_mode,
         )
         existing = Summary.query.filter_by(cache_key=cache_key).order_by(Summary.created_at.desc()).first()
@@ -45,7 +47,7 @@ class SummarizationService:
             model_name=self.settings.openai_summary_model,
             prompt_version=self.settings.prompt_version,
             summary_mode=summary_mode,
-            source_hash_at_generation=patent.source_hash,
+            source_hash_at_generation=source_hash,
             cache_key=cache_key,
         )
         db.session.add(summary)
@@ -65,7 +67,7 @@ class SummarizationService:
         db.session.commit()
 
         try:
-            structured = self._generate_structured_summary(patent, summary.summary_mode)
+            structured = self._generate_structured_summary(patent)
             markdown = self._render_markdown(structured)
 
             summary.summary_json = structured
@@ -81,56 +83,54 @@ class SummarizationService:
             db.session.commit()
             raise
 
-    def _build_source_text(self, patent: Patent, summary_mode: str) -> str:
+    def _build_source_text(self, patent: Patent) -> str:
         sections = {s.section_type: s.section_text for s in patent.sections}
 
         abstract = sections.get("abstract") or patent.abstract or ""
         claims = sections.get("claims") or ""
         summary_section = sections.get("summary") or ""
-        description = sections.get("description") or ""
-        background = sections.get("background") or ""
-
-        limits = {
-            "brief": 6000,
-            "standard": 12000,
-            "deep": 24000,
-        }
-        max_chars = limits.get(summary_mode, limits["deep"])
+        max_chars = max(1000, self.settings.summary_source_char_limit)
 
         parts = [
             f"TITLE:\n{patent.title or ''}",
             f"ABSTRACT:\n{abstract}",
-            f"CLAIMS:\n{claims}",
         ]
 
-        if summary_mode in {"standard", "deep"}:
-            parts.append(f"SUMMARY OF INVENTION:\n{summary_section}")
-            parts.append(f"BACKGROUND:\n{background}")
-
-        if summary_mode == "deep":
-            parts.append(f"DETAILED DESCRIPTION:\n{description}")
+        if summary_section:
+            parts.append(f"PATENT SUMMARY SECTION:\n{summary_section}")
+        if not abstract and not summary_section and claims:
+            parts.append(f"CLAIMS EXCERPT:\n{claims}")
 
         joined = "\n\n".join(parts)
         return joined[:max_chars]
 
+    def _summary_source_hash(self, patent: Patent) -> str:
+        source_text = self._build_source_text(patent)
+        return make_source_hash(
+            {
+                "publication_number": patent.publication_number,
+                "summary_source": source_text,
+            }
+        )
+
     @retry(wait=wait_exponential(multiplier=1, min=1, max=8), stop=stop_after_attempt(3))
-    def _generate_structured_summary(self, patent: Patent, summary_mode: str) -> dict[str, Any]:
-        source_text = self._build_source_text(patent, summary_mode)
+    def _generate_structured_summary(self, patent: Patent) -> dict[str, Any]:
+        source_text = self._build_source_text(patent)
 
         if not self._client:
             return self._fallback_summary(patent, source_text)
 
         system_prompt = (
-            "You are a patent analyst. Return strict JSON only with keys: "
-            "overview, problem_addressed, mechanism, key_claim_elements, novelty_signals, "
-            "implementation_signals, applications, risks_and_unknowns, evidence. "
-            "The evidence key must be a list of objects with keys: section, quote, rationale. "
-            "If uncertain, say uncertain. Do not invent facts."
+            "You summarize patents for a busy reader. Return strict JSON only with keys: "
+            "summary, key_points, potential_uses, caveat. The summary must be no more than "
+            "two concise sentences. key_points must contain up to three short strings about "
+            "what the invention does. potential_uses must contain up to two short strings. "
+            "Do not include quotes, evidence, claim charts, legal analysis, or implementation "
+            "detail. Use only the supplied source text. If uncertain, say so in caveat."
         )
 
         user_prompt = (
             f"Publication Number: {patent.publication_number}\n"
-            f"Summary Mode: {summary_mode}\n\n"
             "Source Text:\n"
             f"{source_text}"
         )
@@ -142,8 +142,8 @@ class SummarizationService:
                 {"role": "user", "content": user_prompt},
             ],
             response_format={"type": "json_object"},
-            max_tokens=self.settings.summary_max_output_tokens,
-            temperature=0.2,
+            max_tokens=min(self.settings.summary_max_output_tokens, 550),
+            temperature=0.1,
         )
 
         raw = completion.choices[0].message.content or "{}"
@@ -154,39 +154,22 @@ class SummarizationService:
     @staticmethod
     def _validate_structured(payload: dict[str, Any]) -> None:
         required = [
-            "overview",
-            "problem_addressed",
-            "mechanism",
-            "key_claim_elements",
-            "novelty_signals",
-            "implementation_signals",
-            "applications",
-            "risks_and_unknowns",
-            "evidence",
+            "summary",
+            "key_points",
+            "potential_uses",
+            "caveat",
         ]
         missing = [k for k in required if k not in payload]
         if missing:
             raise ValueError(f"Summary JSON missing required keys: {', '.join(missing)}")
 
     def _fallback_summary(self, patent: Patent, source_text: str) -> dict[str, Any]:
-        excerpt = source_text[:1200]
-        claims_hint = "Claims text available." if "CLAIMS:" in source_text and len(source_text.split("CLAIMS:")) > 1 else "Claims text unavailable in source."
+        abstract = patent.abstract or source_text[:700]
         return {
-            "overview": f"{patent.title or 'Patent record'} focuses on a technical invention described in the source document.",
-            "problem_addressed": "The invention appears to target limitations in existing approaches described in the background and claim language.",
-            "mechanism": "Mechanism details require AI generation with an OpenAI API key. The system captured source sections and can generate this on-demand.",
-            "key_claim_elements": [claims_hint],
-            "novelty_signals": ["Novelty analysis pending full model-generated synthesis."],
-            "implementation_signals": ["Implementation details should be extracted from the detailed description and claims."],
-            "applications": ["Applications can be inferred from the problem domain and assignee context."],
-            "risks_and_unknowns": ["Fallback summary is limited because OPENAI_API_KEY is not configured."],
-            "evidence": [
-                {
-                    "section": "source_excerpt",
-                    "quote": excerpt,
-                    "rationale": "Fallback evidence excerpt from ingested source text.",
-                }
-            ],
+            "summary": abstract or f"{patent.title or 'This patent'} needs an OpenAI API key before an AI summary can be generated.",
+            "key_points": ["AI summary generation is unavailable because OPENAI_API_KEY is not configured."],
+            "potential_uses": [],
+            "caveat": "This is a fallback summary from stored metadata, not a model-generated summary.",
         }
 
     @staticmethod
@@ -196,45 +179,20 @@ class SummarizationService:
                 return "\n".join([f"- {item}" for item in value]) or "- None"
             return str(value)
 
-        evidence_entries = payload.get("evidence", [])
-        evidence_lines: list[str] = []
-        for item in evidence_entries:
-            if isinstance(item, dict):
-                section = item.get("section", "unknown")
-                quote = item.get("quote", "")
-                rationale = item.get("rationale", "")
-                evidence_lines.append(f"- **{section}**: \"{quote}\" ({rationale})")
+        lines = [
+            "## Summary",
+            str(payload.get("summary", "")),
+            "",
+            "## Key Points",
+            _listify(payload.get("key_points", [])),
+        ]
 
-        if not evidence_lines:
-            evidence_lines.append("- No evidence provided")
+        potential_uses = payload.get("potential_uses", [])
+        if potential_uses:
+            lines.extend(["", "## Potential Uses", _listify(potential_uses)])
 
-        return "\n".join(
-            [
-                "## Overview",
-                str(payload.get("overview", "")),
-                "",
-                "## Problem Addressed",
-                str(payload.get("problem_addressed", "")),
-                "",
-                "## Mechanism",
-                str(payload.get("mechanism", "")),
-                "",
-                "## Key Claim Elements",
-                _listify(payload.get("key_claim_elements", [])),
-                "",
-                "## Novelty Signals",
-                _listify(payload.get("novelty_signals", [])),
-                "",
-                "## Implementation Signals",
-                _listify(payload.get("implementation_signals", [])),
-                "",
-                "## Applications",
-                _listify(payload.get("applications", [])),
-                "",
-                "## Risks And Unknowns",
-                _listify(payload.get("risks_and_unknowns", [])),
-                "",
-                "## Evidence",
-                "\n".join(evidence_lines),
-            ]
-        )
+        caveat = str(payload.get("caveat", "")).strip()
+        if caveat:
+            lines.extend(["", "## Caveat", caveat])
+
+        return "\n".join(lines)

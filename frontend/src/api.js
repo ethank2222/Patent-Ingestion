@@ -40,10 +40,10 @@ export async function getPatent(publicationNumber) {
   return request(`/patents/${publicationNumber}`);
 }
 
-export async function requestSummary(publicationNumber, mode = "deep") {
+export async function requestSummary(publicationNumber) {
   return request(`/patents/${publicationNumber}/summaries`, {
     method: "POST",
-    body: JSON.stringify({ mode })
+    body: JSON.stringify({ mode: "summary" })
   });
 }
 

@@ -1,12 +1,13 @@
-# U.S. Patent Intelligence Platform
+# Patent Summaries
 
-React + Flask platform for browsing recent U.S. patent publications/grants and generating AI summaries **only when a user requests one**.
+React + Flask app for browsing recent U.S. patent records and generating compact AI summaries **only when a user requests one**.
 
 ## Key Behavior
-- Ingestion stores metadata and source text sections.
+- Ingestion stores metadata and source text sections for summary generation.
 - No background mass summarization.
 - AI summary generation is on-demand from the patent detail page.
 - Summaries are cached by publication/model/prompt/source hash to conserve tokens.
+- The summarizer uses one compact mode with a bounded source excerpt and small output cap.
 
 ## Monorepo Layout
 - `backend/`: Flask API, ingestion pipeline, summary worker, DB models.
@@ -27,14 +28,38 @@ React + Flask platform for browsing recent U.S. patent publications/grants and g
 Copy `.env.example` and configure these at minimum:
 - `DATABASE_URL`
 - `REDIS_URL`
-- `USPTO_API_KEY`
 - `OPENAI_API_KEY`
 - `ADMIN_API_TOKEN`
 
 Optional but useful:
+- `USPTO_API_KEY` (only if your USPTO access requires one)
 - `USE_SAMPLE_DATA_ON_FAILURE=true` (dev fallback)
 - `OPENAI_SUMMARY_MODEL=gpt-4.1-mini`
-- `SUMMARY_MAX_OUTPUT_TOKENS=1400`
+- `SUMMARY_MAX_OUTPUT_TOKENS=500`
+- `SUMMARY_SOURCE_CHAR_LIMIT=3500`
+
+## API Keys
+
+### OpenAI
+This is the only external key required for AI summaries.
+
+1. Sign in to the OpenAI Platform.
+2. Open the API keys page: `https://platform.openai.com/api-keys`.
+3. Create a new secret key and copy it once.
+4. Set it as `OPENAI_API_KEY` in your local `.env`, Railway variables, or shell environment.
+
+OpenAI's quickstart shows `OPENAI_API_KEY` as the environment variable read by the SDK: `https://developers.openai.com/api/docs/quickstart`.
+
+### USPTO
+The app reads public patent metadata from the USPTO Open Data APIs. Leave `USPTO_API_KEY` blank unless the USPTO portal or your deployment requires a key for the endpoint or rate limit you use.
+
+1. Open the USPTO API catalog: `https://data.uspto.gov/apis`.
+2. Sign in or create a USPTO account if the API listing asks for authentication.
+3. Create/copy the API key shown for your account or application.
+4. Set it as `USPTO_API_KEY`.
+
+### Admin Token
+`ADMIN_API_TOKEN` is not from an external provider. Create a strong random value yourself and use it when calling `/api/admin/*` endpoints.
 
 ## Local Development
 
@@ -105,12 +130,12 @@ Create these Railway resources:
 - `DATABASE_URL` (Railway Postgres URL)
 - `REDIS_URL` (Railway Redis URL)
 - `USPTO_API_BASE=https://api.uspto.gov/api/v1`
-- `USPTO_API_KEY=<your_uspto_key>`
 - `OPENAI_API_KEY=<your_openai_key>`
 - `ADMIN_API_TOKEN=<strong_secret>`
 - `RQ_ASYNC=true`
 - `APP_DEBUG=false`
 - `USE_SAMPLE_DATA_ON_FAILURE=false` (recommended for production)
+- `USPTO_API_KEY=<your_uspto_key>` (optional unless required for your USPTO access)
 
 ### 5. Initialize Data
 After first deploy, call admin endpoint once:
@@ -124,8 +149,9 @@ curl -X POST https://<your-railway-domain>/api/admin/ingest/incremental \
 ## Operational Notes
 - Summary jobs are queued in Redis (`rq` queue name: `summaries`).
 - If queue is unavailable, API falls back to inline summary execution.
-- Summary cache key includes `publication_number + model + prompt_version + summary_mode + source_hash`.
+- Summary cache key includes `publication_number + model + prompt_version + summary_mode + compact_source_hash`.
 - Change `PROMPT_VERSION` to force regeneration after prompt upgrades.
+- Lower `SUMMARY_SOURCE_CHAR_LIMIT` or `SUMMARY_MAX_OUTPUT_TOKENS` further if you want stricter cost control.
 
 ## Security Notes
 - Keep admin endpoints protected using `ADMIN_API_TOKEN`.

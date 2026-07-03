@@ -5,8 +5,6 @@ import { listPatents } from "../api";
 
 const DEFAULT_FILTERS = {
   q: "",
-  doc_type: "",
-  cpc_prefix: "",
   assignee: "",
   from_date: "",
   to_date: "",
@@ -52,8 +50,8 @@ export default function PatentListPage() {
 
   return (
     <section className="panel">
-      <h1>Recent U.S. Patent Publications And Grants</h1>
-      <p className="hint">Patents are ingested continuously. AI summaries are generated only when requested in a detail page.</p>
+      <h1>Patent Summaries</h1>
+      <p className="hint">Recent U.S. patent records with compact summaries generated on demand.</p>
 
       <PatentFilters
         filters={filters}

@@ -12,11 +12,8 @@ export default function PatentTable({ items }) {
           <tr>
             <th>Publication</th>
             <th>Title</th>
-            <th>Type</th>
             <th>Publication Date</th>
-            <th>Filing Date</th>
             <th>Assignee</th>
-            <th>CPC</th>
           </tr>
         </thead>
         <tbody>
@@ -26,11 +23,8 @@ export default function PatentTable({ items }) {
                 <Link to={`/patents/${item.publication_number}`}>{item.publication_number}</Link>
               </td>
               <td>{item.title || "Untitled"}</td>
-              <td>{item.doc_type}</td>
               <td>{item.publication_date || "-"}</td>
-              <td>{item.filing_date || "-"}</td>
               <td>{item.assignee || "-"}</td>
-              <td>{item.cpc_primary || "-"}</td>
             </tr>
           ))}
         </tbody>
